@@ -1,6 +1,6 @@
 module.exports.User = class User {
 	constructor() {
-		this.ratings = [];
+		this.ratings = {};
 	}
 }
 
@@ -11,9 +11,7 @@ module.exports.Movie = class Movie {
 }
 
 module.exports.Rating = class Rating {
-	constructor(userId, movieId, value, timestamp) {
-		this.userId = userId;
-		this.movieId = movieId;
+	constructor(value, timestamp) {
 		this.value = value;
 		this.timestamp = timestamp;
 	}

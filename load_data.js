@@ -15,7 +15,7 @@ module.exports.readRatings = function (path, users, common, cb) {
 				if(users[uid] == null) 
 					users[uid] = new common.User();
 
-				users[uid].ratings.push(new common.Rating(uid, mid, val, time));
+				users[uid].ratings[mid] = new common.Rating(val, time);
 			}
 		})
 		.on('end',function() {

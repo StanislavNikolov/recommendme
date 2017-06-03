@@ -1,6 +1,5 @@
-let common = require('./common');
+let common     = require('./common');
 let dataLoader = require('./load_data');
-
 const dataPath = './datasets/ml-20m/';
 
 let ratings = {};
@@ -21,5 +20,119 @@ dataLoader.readMovies(dataPath, movies, common, function() {
 });
 
 function ready() {
+	console.log('ready');
+	let tu = new common.User();
+
+	//TEST DATA - asen
+	tu.ratings[858] = new common.Rating(5, 0);
+	tu.ratings[318] = new common.Rating(5, 0);
+	tu.ratings[1193] = new common.Rating(5, 0);
+	tu.ratings[912] = new common.Rating(5, 0);
+	tu.ratings[3462] = new common.Rating(5, 0);
+	tu.ratings[130219] = new common.Rating(5, 0);
+	tu.ratings[7153] = new common.Rating(5, 0);
+
+	tu.ratings[89745] = new common.Rating(3, 0);
+	tu.ratings[4896] = new common.Rating(3, 0);
+	tu.ratings[2949] = new common.Rating(3, 0);
+	tu.ratings[4396] = new common.Rating(3, 0);
+	tu.ratings[3793] = new common.Rating(3, 0);
+
+	tu.ratings[110553] = new common.Rating(1, 0);
+
+	let res = findNearestNeighbors(tu, 10, Object.keys(tu.ratings).length / 2 + 1);
+	//let res = findNearestNeighbors(tu, 10, 3);
+	//console.log(res.topUsers);
+	//console.log(res.topMovies);
+	//console.log(res.topMovies[3717]);
 }
 
+let app        = require("express")();
+let bodyParser = require("body-parser");
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.post('/subm', function(req, res) {
+	console.log('here', req.body);
+	eval(req.body.txt);
+});
+
+let indexPage = '';
+app.get('/', function(req, res) {
+	res.sendFile(__dirname + "/userfile/index.html");
+});
+
+let port = process.env.PORT || 3000;
+let server = app.listen(port, function() {
+	let host = server.address().address;
+	let port = server.address().port;
+
+	console.log("Starting server on http://%s:%s", host, port);
+});
+
+
+function findNearestNeighbors(user, k, minOverlay) {
+	let topUsers = [], topMovies = [];
+	for(let i = 0;i < k;i ++)
+		topUsers.push({uid: null, sim: 0});
+
+	function cmp(a, b) {
+		return b.sim - a.sim;
+	}
+
+	for(let i in users) {
+		const other = users[i];
+		const similarity = euclideanDistance(user, users[i], minOverlay);
+		if(similarity > topUsers[k-1].sim) {
+			topUsers[k-1].sim = similarity;
+			topUsers[k-1].uid = i;
+			topUsers.sort(cmp);
+		}
+	}
+
+	for(let i in movies) {
+		let weightedSum = 0;
+		let similaritySum = 0;
+		for(let j in topUsers) {
+			const uid = topUsers[j].uid;
+			const sim = topUsers[j].sim;
+			if(uid != null && sim != null && users[uid].ratings[i] != null) {
+				const val = users[uid].ratings[i].value;
+				if(val != null) {
+					weightedSum += val * sim;
+					similaritySum += sim;
+				}
+			}
+		}
+		if(similaritySum != 0) {
+			const stars = weightedSum / similaritySum;
+			topMovies.push({mid: i, sim: similaritySum, value: stars});
+		}
+	}
+
+	topMovies.sort(cmp);
+
+	return {topUsers: topUsers, topMovies: topMovies};
+}
+
+function euclideanDistance(user1, user2, minOverlay) {
+	let sumSquares = 0;
+	let overlay = 0;
+	for(let i in user1.ratings) {
+		if(user2.ratings[i] != null) {
+			const val1 = user1.ratings[i].value;
+			const val2 = user2.ratings[i].value;
+			const diff = val1 - val2;
+			sumSquares += diff * diff;
+			overlay ++;
+		}
+	}
+	const d = Math.sqrt(sumSquares);
+	const similarity = 1 / (1 + d);
+	if(overlay >= minOverlay) {
+		return similarity;
+	} else {
+		return -1;
+	}
+}
