@@ -1,10 +1,47 @@
 <html>
 	<title> recommendme </title>
 	<body>
-		<div id="selected"></div>
 		<center>
-			<input placeholder="Search"/>
+			<input placeholder="Search" id="input"/>
 			<input type="button" value="add"/>
+			<div id="titleHelper"></div>
+			<div id="selected"></div>
 		</center>
+	<script>
+let textbox = document.getElementById('input');
+let titleHelper = document.getElementById("titleHelper");
+
+let timeoutId = null;
+textbox.addEventListener("input", function(event) {
+	if(timeoutId != null) {
+		window.clearTimeout(timeoutId);
+	}
+	timeoutId = setTimeout(function() {requestTitles(textbox.value)}, 400);
+});
+
+function requestTitles() {
+	console.log('here');
+	let request = new XMLHttpRequest();
+	request.open("POST", "title/", true);
+	request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+	request.send("str=" + encodeURIComponent(textbox.value));
+	request.onreadystatechange = function() {
+		if(request.readyState == 4) {
+			let response = JSON.parse(request.responseText);
+			titleHelper.innerHTML = "";
+			while(titleHelper.lastChild) {
+				titleHelper.removeChild(titleHelper.lastChild);
+			}
+			for(let i in response) {
+				titleHelper.innerHTML += "<a>" + response[i].title + "</a><br>";
+				//console.log(response[i].title);
+			}
+			console.log('=======');
+		}
+	};
+}
+
+
+	</script>
 	</body>
 </html>

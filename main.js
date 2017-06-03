@@ -74,33 +74,45 @@ function fuzzyMatch(word, k) {
 	return topTitles;
 }
 
-app.post('/subm', function(req, res) {
+app.post('/title', function(req, res) {
 	let sum = {};
 
 	const words = req.body.str.split(' ');
+	const commonWords = ["the", "be", "to", "of", "and", "a", "in", "have", "as", "at"];
 	for(let w in words) {
-		const res = fuzzyMatch(words[w], 40);
+		const res = fuzzyMatch(words[w], 1000);
+		let mul = 0.1;
+		if(commonWords.indexOf(words[w]) != -1) {
+			mul = 1;
+		}
 		for(let i in res) {
 			if(sum[res[i].mid] == null) 
 				sum[res[i].mid] = 0;
-			sum[res[i].mid] += res[i].score;
+			sum[res[i].mid] += res[i].score * mul;
 		}
 	}
+	/*
+	const res = fuzzyMatch(req.body.str, 1000);
+	let mul = 2;
+	for(let i in res) {
+		if(sum[res[i].mid] == null)
+			sum[res[i].mid] = 0;
+		sum[res[i].mid] += res[i].score * mul;
+	}
+	*/
 
 	function cmp(a, b) { return b.score - a.score; }
 
 	let ans = [];
 	for(let i in sum) {
 		if(sum[i] != 0) {
-			ans.push({title: movies[i].title, score: sum[i]});
+			ans.push({title: movies[i].title, score: sum[i], mid: i});
 		}
 	}
 	ans.sort(cmp);
 	ans = ans.slice(0, 10);
 
-	for(let i in ans) {
-		console.log(ans[i].title);
-	}
+	res.send(ans);
 });
 
 let indexPage = '';
