@@ -1,3 +1,5 @@
+require('string_score'); // adds string.score
+
 let common     = require('./common');
 let dataLoader = require('./load_data');
 const dataPath = './datasets/ml-20m/';
@@ -53,14 +55,57 @@ let bodyParser = require("body-parser");
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+function fuzzyMatch(word, k) {
+	let topTitles = [];
+	for(let i = 0;i < k;i ++)
+		topTitles.push({mid: null, score: 0});
+
+	function cmp(a, b) { return b.score - a.score; }
+
+	for(let i in movies) {
+		const score = movies[i].title.score(word, 0.0);
+		if(score > topTitles[k-1].score) {
+			topTitles[k-1].score = score;
+			topTitles[k-1].mid = i;
+			topTitles.sort(cmp);
+		}
+	}
+
+	return topTitles;
+}
+
 app.post('/subm', function(req, res) {
-	console.log('here', req.body);
-	eval(req.body.txt);
+	let sum = {};
+
+	const words = req.body.str.split(' ');
+	for(let w in words) {
+		const res = fuzzyMatch(words[w], 40);
+		for(let i in res) {
+			if(sum[res[i].mid] == null) 
+				sum[res[i].mid] = 0;
+			sum[res[i].mid] += res[i].score;
+		}
+	}
+
+	function cmp(a, b) { return b.score - a.score; }
+
+	let ans = [];
+	for(let i in sum) {
+		if(sum[i] != 0) {
+			ans.push({title: movies[i].title, score: sum[i]});
+		}
+	}
+	ans.sort(cmp);
+	ans = ans.slice(0, 10);
+
+	for(let i in ans) {
+		console.log(ans[i].title);
+	}
 });
 
 let indexPage = '';
 app.get('/', function(req, res) {
-	res.sendFile(__dirname + "/userfile/index.html");
+	res.sendFile(__dirname + "/userfiles/index.html");
 });
 
 let port = process.env.PORT || 3000;
@@ -77,9 +122,7 @@ function findNearestNeighbors(user, k, minOverlay) {
 	for(let i = 0;i < k;i ++)
 		topUsers.push({uid: null, sim: 0});
 
-	function cmp(a, b) {
-		return b.sim - a.sim;
-	}
+	function cmp(a, b) { return b.sim - a.sim; }
 
 	for(let i in users) {
 		const other = users[i];

@@ -28,7 +28,7 @@ module.exports.readMovies = function (path, movies, common, cb) {
 		.pipe(parse({delimiter: ','}))
 		.on('data', function(data) {
 			const mid    = Number(data[0]);
-			const title  = Number(data[1]);
+			const title  = data[1];
 			//const genres = data[2].split('|'); // TODO
 			if(mid != null) {
 				movies[mid] = new common.Movie(title);
