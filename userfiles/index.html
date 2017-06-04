@@ -20,13 +20,22 @@
 				</div>
 			</div>
 			<div id="right">
+				<center>
+				<input type="button" id="submitbtn" onclick="submitProfile()" value="Get recommendations"/>
+				</center>
 				<ul id="selected"></ul>
+				<div id="rp1">
+					<div id="rp2">
+						<ul id="recommended"></ul>
+					</div>
+				</div>
 			</div>
 		</center>
 	<script>
 let textbox = document.getElementById('input');
 let titleHelper = document.getElementById('titleHelper');
 let selectedEl = document.getElementById('selected');
+let recommended = document.getElementById('recommended');
 let profile = [];
 let downloaded = {};
 let rating = {};
@@ -55,7 +64,7 @@ function requestTitles() {
 				downloaded[response[i].mid] = response[i].title;
 			}
 		}
-	};
+	}
 }
 
 function add(mid) {
@@ -93,6 +102,32 @@ function rebuild() {
 		let html = '<li class="align">' + rembtn + '&nbsp;' + downloaded[mid] + '&nbsp;' + ratebtns + '</li>';
 		selected.innerHTML += html;
 	}
+}
+
+function submitProfile() {
+	let data = [];
+	for(let i in profile) {
+		data.push({mid: profile[i], r: rating[profile[i]]});
+	}
+	let request = new XMLHttpRequest();
+	request.open('POST', 'getr/', true);
+	request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+	request.send('data=' + encodeURIComponent(JSON.stringify(data))
+	          + '&treshold=4');
+	request.onreadystatechange = function() {
+		if(request.readyState == 4) {
+			let data = JSON.parse(request.responseText);
+			recommended.innerHTML = '';
+			for(let i in data) {
+				data[i].mid = Number(data[i].mid);
+				if(profile.indexOf(data[i].mid) == -1) {
+					let html = '<li class="align">' + format(data[i].v) + '/5.0 - ' + data[i].t + '</li>';
+					recommended.innerHTML += html;
+				}
+			}
+		}
+	}
+
 }
 
 function rate(val, mid) {

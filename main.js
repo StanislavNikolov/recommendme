@@ -23,6 +23,7 @@ dataLoader.readMovies(dataPath, movies, common, function() {
 
 function ready() {
 	console.log('ready');
+	/*
 	let tu = new common.User();
 
 	//TEST DATA - asen
@@ -47,6 +48,7 @@ function ready() {
 	//console.log(res.topUsers);
 	//console.log(res.topMovies);
 	//console.log(res.topMovies[3717]);
+	*/
 }
 
 let app        = require("express")();
@@ -112,6 +114,25 @@ app.post('/title', function(req, res) {
 	ans.sort(cmp);
 	ans = ans.slice(0, 20);
 
+	res.send(ans);
+});
+
+app.post('/getr', function(req, res) {
+	let data = JSON.parse(req.body.data);
+	let treshold = req.body.treshold;
+	let user = new common.User();
+	for(let i in data) {
+		user.ratings[data[i].mid] = new common.Rating(data[i].r, 0);
+	}
+
+	let recm = findNearestNeighbors(user, 10, data.length / 2 + 1).topMovies;
+	let ans = [];
+	for(let i in recm) {
+		if(recm[i].value > req.body.treshold) {
+			ans.push({mid: recm[i].mid, t: movies[recm[i].mid].title, v: recm[i].value});
+		}
+		if(ans.length > 20) break;
+	}
 	res.send(ans);
 });
 
