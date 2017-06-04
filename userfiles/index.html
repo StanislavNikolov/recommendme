@@ -1,47 +1,72 @@
 <html>
+	<head>
 	<title> recommendme </title>
+	<meta charset="utf-8"></meta>
+	<link href="userfiles/style.css" rel="stylesheet"/>
+	</head>
 	<body>
-		<center>
-			<input placeholder="Search" id="input"/>
-			<input type="button" value="add"/>
-			<div id="titleHelper"></div>
-			<div id="selected"></div>
+		<div id="content">
+			<div id="left">
+				<input placeholder='Search' id='input'/>
+				<ul id='titleHelper'></ul>
+			</div>
+			<div id="right">
+				<div id='selected'></div>
+			</div>
 		</center>
 	<script>
 let textbox = document.getElementById('input');
-let titleHelper = document.getElementById("titleHelper");
+let titleHelper = document.getElementById('titleHelper');
+let selectedEl = document.getElementById('selected');
+let profile = [];
+let downloaded = {};
 
 let timeoutId = null;
-textbox.addEventListener("input", function(event) {
+textbox.addEventListener('input', function(event) {
 	if(timeoutId != null) {
 		window.clearTimeout(timeoutId);
 	}
-	timeoutId = setTimeout(function() {requestTitles(textbox.value)}, 400);
+	timeoutId = setTimeout(function() {requestTitles(textbox.value)}, 300);
 });
 
 function requestTitles() {
-	console.log('here');
 	let request = new XMLHttpRequest();
-	request.open("POST", "title/", true);
-	request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-	request.send("str=" + encodeURIComponent(textbox.value));
+	request.open('POST', 'title/', true);
+	request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+	request.send('str=' + encodeURIComponent(textbox.value));
 	request.onreadystatechange = function() {
 		if(request.readyState == 4) {
 			let response = JSON.parse(request.responseText);
-			titleHelper.innerHTML = "";
-			while(titleHelper.lastChild) {
-				titleHelper.removeChild(titleHelper.lastChild);
-			}
+			titleHelper.innerHTML = '';
 			for(let i in response) {
-				titleHelper.innerHTML += "<a>" + response[i].title + "</a><br>";
-				//console.log(response[i].title);
+				let onclick = 'onclick="add(' + response[i].mid + ')"';
+				let html = '<li class="title" ' + onclick + '>' + response[i].title + '</li><br>';
+				titleHelper.innerHTML += html;
+				downloaded[response[i].mid] = response[i].title;
 			}
-			console.log('=======');
 		}
 	};
 }
 
+function add(mid) {
+	profile.push(mid);
+	rebuild();
+}
 
+function remove(mid) {
+	profile.splice(profile.indexOf(mid), 1);
+	rebuild();
+}
+
+function rebuild() {
+	selected.innerHTML = '';
+	for(let i = profile.length - 1;i >= 0;i --) {
+		const mid = profile[i];
+		let onclick = 'onclick="remove(' + mid + ')"';
+		let html = '<li class="title" ' + onclick + '>' + downloaded[mid] + '</li><br>';
+		selected.innerHTML = selected.innerHTML + html;
+	}
+}
 	</script>
 	</body>
 </html>

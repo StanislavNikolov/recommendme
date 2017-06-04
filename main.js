@@ -55,7 +55,7 @@ let bodyParser = require("body-parser");
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-function fuzzyMatch(word, k) {
+function fuzzyMatch(word, k, fuz) {
 	let topTitles = [];
 	for(let i = 0;i < k;i ++)
 		topTitles.push({mid: null, score: 0});
@@ -63,7 +63,7 @@ function fuzzyMatch(word, k) {
 	function cmp(a, b) { return b.score - a.score; }
 
 	for(let i in movies) {
-		const score = movies[i].title.score(word, 0.0);
+		const score = movies[i].title.score(word, fuz);
 		if(score > topTitles[k-1].score) {
 			topTitles[k-1].score = score;
 			topTitles[k-1].mid = i;
@@ -80,26 +80,25 @@ app.post('/title', function(req, res) {
 	const words = req.body.str.split(' ');
 	const commonWords = ["the", "be", "to", "of", "and", "a", "in", "have", "as", "at"];
 	for(let w in words) {
-		const res = fuzzyMatch(words[w], 1000);
-		let mul = 0.1;
+		let match = fuzzyMatch(words[w], 100, 0);
+		let mul = 1;
 		if(commonWords.indexOf(words[w]) != -1) {
-			mul = 1;
+			mul = 0.05;
 		}
-		for(let i in res) {
-			if(sum[res[i].mid] == null) 
-				sum[res[i].mid] = 0;
-			sum[res[i].mid] += res[i].score * mul;
+		for(let i in match) {
+			if(sum[match[i].mid] == null)
+				sum[match[i].mid] = 0;
+			sum[match[i].mid] += match[i].score * mul;
 		}
 	}
-	/*
-	const res = fuzzyMatch(req.body.str, 1000);
-	let mul = 2;
-	for(let i in res) {
-		if(sum[res[i].mid] == null)
-			sum[res[i].mid] = 0;
-		sum[res[i].mid] += res[i].score * mul;
+
+	let match = fuzzyMatch(req.body.str, 100, 0.6);
+	let mul = 3;
+	for(let i in match) {
+		if(sum[match[i].mid] == null) 
+			sum[match[i].mid] = 0;
+		sum[match[i].mid] += match[i].score * mul
 	}
-	*/
 
 	function cmp(a, b) { return b.score - a.score; }
 
@@ -109,15 +108,18 @@ app.post('/title', function(req, res) {
 			ans.push({title: movies[i].title, score: sum[i], mid: i});
 		}
 	}
+
 	ans.sort(cmp);
-	ans = ans.slice(0, 10);
+	ans = ans.slice(0, 20);
 
 	res.send(ans);
 });
 
-let indexPage = '';
 app.get('/', function(req, res) {
 	res.sendFile(__dirname + "/userfiles/index.html");
+});
+app.get("/userfiles/*", function(req, res) {
+	res.sendFile(__dirname + req.url);
 });
 
 let port = process.env.PORT || 3000;
